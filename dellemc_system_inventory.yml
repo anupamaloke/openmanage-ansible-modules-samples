@@ -1,0 +1,15 @@
+---
+- hosts: poweredge
+  connection: local
+  gather_facts: False
+
+  tasks:
+  - name: Get detailed system inventory
+    dellemc_get_system_inventory:
+      idrac_ip:  "{{ inventory_hostname }}"
+      idrac_user:  "{{ idrac_user }}"
+      idrac_password:  "{{ idrac_password }}"
+    register:  result
+
+  - debug:
+      msg:  result
