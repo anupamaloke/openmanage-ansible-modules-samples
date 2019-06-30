@@ -13,12 +13,13 @@
         - Systems
       command:
         - GetSystemInventory
+        - GetPsuInventory
         - GetCpuInventory
         - GetMemoryInventory
         - GetNicInventory
         - GetStorageControllerInventory
         - GetDiskInventory
-        - GetVolumeInventory
+        #- GetVolumeInventory
         - GetBiosAttributes
         - GetBootOrder
-        - GetBootOverride
+        #- GetBootOverride
