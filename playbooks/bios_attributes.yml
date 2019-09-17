@@ -1,0 +1,14 @@
+---
+- hosts: idrac
+  connection: local
+  gather_facts: False
+
+  vars:
+    ansible_python_interpreter: python
+
+  tasks:
+  - name: Configure BIOS
+    include_role:
+      name: bios_attributes
+    tags:
+      - bios_attributes

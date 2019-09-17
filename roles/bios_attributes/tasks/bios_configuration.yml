@@ -1,0 +1,8 @@
+---
+- name: Configure BIOS attributes
+  dellemc_configure_bios:
+    idrac_ip: "{{ inventory_hostname }}"
+    idrac_user: "{{ idrac_user }}"
+    idrac_password: "{{ idrac_password }}"
+    share_name: "{{ playbook_dir }}"
+    attributes: "{{ bios_attributes }}"

@@ -1,0 +1,5 @@
+---
+- name: Configure BIOS attributes
+  import_tasks: bios_configuration.yml
+  tags:
+    - bios_attributes
