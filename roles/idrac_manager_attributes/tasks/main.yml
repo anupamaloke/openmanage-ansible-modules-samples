@@ -1,0 +1,16 @@
+---
+- name: Set manager attributes
+  idrac_server_config_profile:
+    idrac_ip: "{{ inventory_hostname }}"
+    idrac_user: "{{ idrac_user }}"
+    idrac_password: "{{ idrac_password }}"
+    command: "{{ command }}"
+    share_name: "{{ share_name }}"
+    scp_file: "manager_attributes.xml"
+    scp_components: "{{ scp_components }}"
+    shutdown_type: "{{ shutdown_type }}"
+    end_host_power_state: "{{ end_host_power_state }}"
+    job_wait: "{{ job_wait }}"
+  delegate_to: localhost
+  tags:
+    - idrac-manager-attributes

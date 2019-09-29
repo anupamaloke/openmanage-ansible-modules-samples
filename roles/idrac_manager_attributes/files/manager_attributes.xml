@@ -1,0 +1,16 @@
+<SystemConfiguration>
+<Component FQDD="iDRAC.Embedded.1">
+ <Attribute Name="IPv4.1#DHCPEnable">Enabled</Attribute>
+ <Attribute Name="IPv4.1#DNSFromDHCP">Enabled</Attribute>
+ <Attribute Name="IPMILan.1#Enable">Enabled</Attribute>
+ <Attribute Name="Serial.1#BaudRate">115200</Attribute>
+ <Attribute Name="IPMISerial.1#BaudRate">115200</Attribute>
+ <Attribute Name="IPMISOL.1#BaudRate">115200</Attribute>
+ <Attribute Name="VirtualConsole.1#PluginType">Java</Attribute>
+</Component>
+<Component FQDD="System.Embedded.1">
+ <Attribute Name="ThermalSettings.1#FanSpeedOffset">Off</Attribute>
+ <Attribute Name="ServerPwr.1#PSRedPolicy">A/B Grid Redundant</Attribute>
+ <Attribute Name="ServerPwr.1#PSRapidOn">Enabled</Attribute>
+</Component>
+</SystemConfiguration>

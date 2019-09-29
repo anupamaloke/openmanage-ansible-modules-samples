@@ -1,0 +1,7 @@
+---
+command: "import"
+share_name: "{{ role_path }}/files"
+scp_components: "ALL"
+job_wait: True
+shutdown_type: "Graceful"
+end_host_power_state: "On"
