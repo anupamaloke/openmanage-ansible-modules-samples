@@ -1,0 +1,51 @@
+---
+- hosts: idrac
+  connection: local
+  gather_facts: False
+
+  tasks:
+  - name: Set iDRAC attributes
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Managers/iDRAC.Embedded.1/Attributes"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: PATCH
+      headers:
+        accept: "application/json"
+        content-type: "application/json"
+      body:
+        "Attributes":
+          "IPv4.1.DHCPEnable": "Enabled"
+          "IPv4.1.DNSFromDHCP": "Enabled"
+          "IPMILan.1.Enable": "Enabled"
+          "Serial.1.BaudRate": "115200"
+          "IPMISerial.1.BaudRate": "115200"
+          "IPMISOL.1.BaudRate": "115200"
+          "VirtualConsole.1.PluginType": "Java"
+      body_format: "json"
+      force_basic_auth: no
+      validate_certs: no
+    register: result
+    tags:
+      - set-idrac-attributes
+
+  - name: Set System attributes
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Managers/System.Embedded.1/Attributes"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: PATCH
+      headers:
+        accept: "application/json"
+        content-type: "application/json"
+      body:
+        "Attributes":
+          "ThermalSettings.1.FanSpeedOffset": "Off"
+          "ServerPwr.1.PSRedPolicy": "A/B Grid Redundant"
+          "ServerPwr.1.PSRapidOn": "Enabled"
+      body_format: "json"
+      force_basic_auth: no
+      validate_certs: no
+    register: result
+    tags:
+      - set-system-attributes
