@@ -1,0 +1,11 @@
+---
+- name: View storage volumes for a RAID controller
+  dellemc_idrac_storage_volume:
+    idrac_ip: "{{ inventory_hostname }}"
+    idrac_user: "{{ idrac_user }}"
+    idrac_password: "{{ idrac_password }}"
+    controller_id: "{{ controller_id }}"
+    volume_id: "{{ volume_id }}"
+    state: "view"
+  tags:
+    - view-idrac-storage-volume

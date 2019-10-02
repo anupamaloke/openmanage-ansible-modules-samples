@@ -1,0 +1,39 @@
+---
+- hosts: idrac
+  name: Configure iDRAC storage volumes
+  connection: local
+  gather_facts: False
+
+  vars:
+    ansible_python_interpreter: python
+
+  tasks:
+  - name: Create storage volume
+    include_role:
+      name: idrac_storage_volume
+    vars:
+      controller_id: "RAID.Slot.5-1"
+      raid_reset_config: "True"
+      write_cache_policy: "WriteBack"
+      read_cache_policy: "ReadAhead"
+      volumes:
+        - name: "Virtual Disk 0"
+          volume_type: "RAID 1"
+          drives:
+            id:
+              - "Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.5-1"
+              - "Disk.Bay.1:Enclosure.Internal.0-1:RAID.Slot.5-1"
+          stripe_size: 524288
+          span_length: 2
+          span_depth: 1
+        - name: "Virtual Disk 1"
+          volume_type: "RAID 1"
+          drives:
+            id:
+              - "Disk.Bay.2:Enclosure.Internal.0-1:RAID.Slot.5-1"
+              - "Disk.Bay.3:Enclosure.Internal.0-1:RAID.Slot.5-1"
+          stripe_size: 524288
+          span_length: 2
+          span_depth: 1
+    tags:
+      - create-idrac-storage-volume

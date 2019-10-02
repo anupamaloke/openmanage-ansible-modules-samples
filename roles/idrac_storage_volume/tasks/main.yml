@@ -1,0 +1,10 @@
+---
+- name: Create storage volume
+  import_tasks: create_idrac_storage_volume.yml
+  tags:
+    - create-idrac-storage-volume
+
+- name: View storage volume
+  import_tasks: view_idrac_storage_volume.yml
+  tags:
+    - view-idrac-storage-volume

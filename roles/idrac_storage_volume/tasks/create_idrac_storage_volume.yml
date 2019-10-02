@@ -1,0 +1,16 @@
+---
+- name: Create storage volume
+  dellemc_idrac_storage_volume:
+    idrac_ip: "{{ inventory_hostname }}"
+    idrac_user: "{{ idrac_user }}"
+    idrac_password: "{{ idrac_password }}"
+    controller_id: "{{ controller_id }}"
+    volumes: "{{ volumes }}"
+    raid_reset_config: "{{ raid_reset_config }}"
+    raid_init_operation: "{{ raid_init_operation }}"
+    disk_cache_policy: "{{ disk_cache_policy }}"
+    write_cache_policy: "{{ write_cache_policy }}"
+    read_cache_policy: "{{ read_cache_policy }}"
+    media_type: "{{ media_type }}"
+    protocol: "{{ protocol }}"
+    state: "create"

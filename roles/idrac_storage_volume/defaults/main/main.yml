@@ -1,0 +1,11 @@
+---
+raid_reset_config: "False"
+disk_cache_policy: "Default"
+write_cache_policy: "WriteThrough"
+read_cache_policy: "NoReadAhead"
+protocol: "SAS"
+media_type: "HDD"
+raid_init_operation: "None"
+controller_id:
+volume_id:
+state: "view"
