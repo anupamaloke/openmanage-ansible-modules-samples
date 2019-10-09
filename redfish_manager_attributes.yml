@@ -1,9 +1,64 @@
 ---
 - hosts: idrac
+  name: Set the iDRAC manager and system attributes
   connection: local
   gather_facts: False
 
+  vars:
+    idrac_manager_attributes:
+      "IPv4.1.DHCPEnable": "Enabled"
+      "IPv4.1.DNSFromDHCP": "Enabled"
+      "IPMILan.1.Enable": "Disabled"
+      "Serial.1.BaudRate": "57600"
+      "IPMISerial.1.BaudRate": "57600"
+      "IPMISOL.1.BaudRate": "115200"
+      "VirtualConsole.1.PluginType": "HTML5"
+    idrac_system_attributes:
+      "ThermalSettings.1.FanSpeedOffset": "Off"
+      "ServerPwr.1.PSRedPolicy": "A/B Grid Redundant"
+      "ServerPwr.1.PSRapidOn": "Enabled"
+
+
   tasks:
+  - name: Get iDRAC manager attributes
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Managers/iDRAC.Embedded.1/Attributes"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+    register: result
+    tags:
+      - get-idrac-attributes
+
+  - name: get iDRAC manager attributes
+    set_fact:
+      current_manager_attributes: "{{ result.json.Attributes }}"
+    tags:
+      - get-idrac-attributes
+
+  - debug:
+      var: current_manager_attributes[item.key]
+    loop: "{{ idrac_manager_attributes | dict2items }}"
+    tags:
+      - get-idrac-attributes
+
+  - name: iterate and add those manager attributes to dict that have a different value
+    set_fact:
+      new_manager_attributes: "{{ new_manager_attributes | default({}) | combine( { item.key: item.value } ) }}"
+    when: item.key in current_manager_attributes and item.value != current_manager_attributes[item.key]
+    loop: "{{ idrac_manager_attributes | dict2items }}"
+    tags:
+      - get-idrac-attributes
+
+  - debug:
+      var: new_manager_attributes
+    tags:
+      - get-idrac-attributes
+
   - name: Set iDRAC attributes
     uri:
       url: "https://{{inventory_hostname}}/redfish/v1/Managers/iDRAC.Embedded.1/Attributes"
@@ -14,20 +69,48 @@
         accept: "application/json"
         content-type: "application/json"
       body:
-        "Attributes":
-          "IPv4.1.DHCPEnable": "Enabled"
-          "IPv4.1.DNSFromDHCP": "Enabled"
-          "IPMILan.1.Enable": "Enabled"
-          "Serial.1.BaudRate": "115200"
-          "IPMISerial.1.BaudRate": "115200"
-          "IPMISOL.1.BaudRate": "115200"
-          "VirtualConsole.1.PluginType": "Java"
+        "Attributes": "{{ new_manager_attributes }}"
       body_format: "json"
+      force_basic_auth: no
+      validate_certs: no
+    when: new_manager_attributes is defined and new_manager_attributes.keys()|length > 0
+    register: result
+    tags:
+      - set-idrac-attributes
+
+  - name: Get iDRAC system attributes
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Managers/System.Embedded.1/Attributes"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
       force_basic_auth: no
       validate_certs: no
     register: result
     tags:
-      - set-idrac-attributes
+      - get-system-attributes
+
+  - name: get iDRAC system attributes
+    set_fact:
+      current_system_attributes: "{{ result.json.Attributes }}"
+    tags:
+      - get-system-attributes
+
+  - debug:
+      var: current_system_attributes[item.key]
+    loop: "{{ idrac_system_attributes | dict2items }}"
+    tags:
+      - get-system-attributes
+
+  - name: iterate and add those attributes to dict that have a different value
+    set_fact:
+      new_system_attributes: "{{ new_system_attributes | default({}) | combine( { item.key: item.value } ) }}"
+    when: item.key in current_system_attributes and item.value != current_system_attributes[item.key]
+    loop: "{{ idrac_system_attributes | dict2items }}"
+    tags:
+      - get-system-attribute
 
   - name: Set System attributes
     uri:
@@ -39,13 +122,11 @@
         accept: "application/json"
         content-type: "application/json"
       body:
-        "Attributes":
-          "ThermalSettings.1.FanSpeedOffset": "Off"
-          "ServerPwr.1.PSRedPolicy": "A/B Grid Redundant"
-          "ServerPwr.1.PSRapidOn": "Enabled"
+        "Attributes": "{{ new_system_attributes }}"
       body_format: "json"
       force_basic_auth: no
       validate_certs: no
+    when: new_system_attributes is defined and new_system_attributes.keys()|length > 0
     register: result
     tags:
       - set-system-attributes
