@@ -8,11 +8,11 @@
     idrac_manager_attributes:
       "IPv4.1.DHCPEnable": "Enabled"
       "IPv4.1.DNSFromDHCP": "Enabled"
-      "IPMILan.1.Enable": "Disabled"
-      "Serial.1.BaudRate": "57600"
-      "IPMISerial.1.BaudRate": "57600"
+      "IPMILan.1.Enable": "Enabled"
+      "Serial.1.BaudRate": "115200"
+      "IPMISerial.1.BaudRate": "115200"
       "IPMISOL.1.BaudRate": "115200"
-      "VirtualConsole.1.PluginType": "HTML5"
+      "VirtualConsole.1.PluginType": "Java"
     idrac_system_attributes:
       "ThermalSettings.1.FanSpeedOffset": "Off"
       "ServerPwr.1.PSRedPolicy": "A/B Grid Redundant"
