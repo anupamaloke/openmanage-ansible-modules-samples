@@ -1,0 +1,131 @@
+---
+- hosts: idrac
+  name: Set the iDRAC manager and system attributes
+  connection: local
+  gather_facts: False
+
+  vars:
+    ansible_python_interpreter: python
+    volume_name: "Virtual Disk 0"
+    storage_controller: "RAID.Slot.1-1"
+    drives:
+      - "Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.1-1"
+      - "Disk.Bay.1:Enclosure.Internal.0-1:RAID.Slot.1-1"
+    optimum_io_size_bytes: 65536
+    volume_type: "Mirrored"
+
+  tasks:
+  - name: Get storage controller details
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Systems/System.Embedded.1/Storage/{{ storage_controller }}"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+    register: result
+    tags:
+      - storage
+
+  - name: Get the drives associated with the storage controller
+    set_fact:
+      associated_drives: "{{ associated_drives | default({}) | combine( {item['@odata.id'].split('/')[-1]: item['@odata.id']} ) }}"
+    loop: "{{ result.json.Drives }}"
+    when: result.json['Drives@odata.count'] > 0
+    tags:
+      - storage
+
+  - name: Assert if no drives are available
+    assert:
+      that:
+        - result.json['Drives@odata.count'] > 0
+        - drives is defined
+        - drives != None
+        - drives | length > 0
+    tags:
+      - storage
+
+  - name: Assert if the drives are not associated with storage controller
+    assert:
+      that:
+        - item in associated_drives.keys()
+    loop: "{{ drives }}"
+    tags:
+      - storage
+
+  - name: Create drives payload
+    set_fact:
+      drives_payload: "{{ drives_payload|default([]) + [ item[1] ] }}"
+    loop: "{{ drives | product(result.json.Drives) | list }}"
+    when: item[1]['@odata.id'].split('/')[-1] == item[0]
+    tags:
+      - storage
+
+  - name: Assert if drives payload is not defined
+    assert:
+      that:
+        - drives_payload is defined
+    tags:
+      - storage
+
+  - name: Submit a POST operation to create the virtual disk
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Systems/System.Embedded.1/Storage/{{ storage_controller }}/Volumes"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: POST
+      headers:
+        accept: "application/json"
+        content-type: "application/json"
+      body: "{{ create_raid_volume_payload }}"
+      body_format: "json"
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 202]
+    vars:
+      create_raid_volume_payload:
+        "Name": "{{ volume_name }}"
+        "VolumeType": "{{ volume_type }}"
+        "Drives": "{{ drives_payload }}"
+        "OptimumIOSizeBytes": "{{ optimum_io_size_bytes }}"
+    register: result
+    tags:
+      - storage
+
+  - name: Get the JOB details
+    uri:
+      url: "{{ result.location }}"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 202]
+    register: task
+    tags:
+      - storage
+
+  - name: If JobType == RealTimeNoRebootConfiguration then loop over the JOB until it completes or fails
+    uri:
+      url: "{{ result.location }}"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 202]
+    register: result
+    until: result.json['TaskState'] == 'Completed' or result.json['TaskState'] == 'Failed'
+    when: task.json['Oem']['Dell']['JobType'] == 'RealTimeNoRebootConfiguration'
+    retries: 20
+    delay: 90
+    changed_when: result.json['TaskState'] == 'Completed'
+    failed_when: result.json['TaskState'] == 'Failed'
+    tags:
+      - storage
