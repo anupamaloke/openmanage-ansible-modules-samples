@@ -1,0 +1,195 @@
+---
+- hosts: idrac
+  name: Set bios attributes
+  connection: local
+  gather_facts: no
+
+  vars:
+    ansible_python_interpreter: python
+    bios_vars_file_name: "redfish_bios_vars.yml"
+
+  tasks:
+  - name: Load BIOS attributes from the variable file
+    include_vars:
+      file: "{{ bios_vars_file_name }}"
+      name: bios_attributes
+    tags:
+      - set-bios-attributes
+
+  - name: Get the BIOS attributes
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Systems/System.Embedded.1/Bios"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+    register: result
+    tags:
+      - get-bios-attributes
+      - set-bios-attributes
+
+  - name: Add current bios attributes to a fact variable
+    set_fact:
+      current_bios_attributes: "{{ result.json.Attributes }}"
+    tags:
+      - set-bios-attributes
+
+  - name: Iterate and add only those bios attributes to dict that have a different value
+    set_fact:
+      new_bios_attributes: "{{ new_bios_attributes | default({}) | combine( { item.key: item.value } ) }}"
+    when: item.key in current_bios_attributes and item.value != current_bios_attributes[item.key]
+    loop: "{{ bios_attributes | dict2items }}"
+    tags:
+      - set-bios-attributes
+
+  - name: Iterate and add only those bios attributes to dict that are already set
+    set_fact:
+      already_set_bios_attributes: "{{ already_set_bios_attributes | default({}) | combine( { item.key: item.value } ) }}"
+    when: item.key in current_bios_attributes and item.value == current_bios_attributes[item.key]
+    loop: "{{ bios_attributes | dict2items }}"
+    tags:
+      - set-bios-attributes
+
+  - name: Iterate and add only those bios attributes to dict that are not found
+    set_fact:
+      not_found_bios_attributes: "{{ not_found_bios_attributes | default ({}) | combine( { item.key: item.value } ) }}"
+    when: item.key not in current_bios_attributes
+    loop: "{{ bios_attributes | dict2items }}"
+    tags:
+      - set-bios-attributes
+
+  - debug:
+      msg: "Following attributes will be applied: {{ new_bios_attributes }}"
+    when: new_bios_attributes is defined
+    tags:
+      - get-bios-attributes
+      - set-bios-attributes
+
+  - debug:
+      msg: "Following attributes are already set: {{ already_set_bios_attributes }}"
+    when: already_set_bios_attributes is defined
+    tags:
+      - get-bios-attributes
+      - set-bios-attributes
+
+  - debug:
+      msg: "Following attributes were not found: {{ not_found_bios_attributes }}"
+    when: not_found_bios_attributes is defined
+    tags:
+      - get-bios-attributes
+      - set-bios-attributes
+
+  - name: Submit a PATCH operation to set BIOS attributes
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Systems/System.Embedded.1/Bios/Settings"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: PATCH
+      headers:
+        accept: "application/json"
+        content-type: "application/json"
+      body:
+        "@Redfish.SettingsApplyTime": "OnReset"
+        "Attributes": "{{ new_bios_attributes }}"
+      body_format: "json"
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 202]
+    when: new_bios_attributes is defined and new_bios_attributes.keys()|length > 0
+    register: bios_config_response
+    tags:
+      - set-bios-attributes
+
+  - name: Check if location is present in the response header and store it in a fact variable so that we use it for monitoring the BIOS config job status
+    set_fact:
+      bios_config_job_url: "{{ result.location }}"
+    when: new_bios_attributes is defined and bios_config_response.location is defined
+    tags:
+      - set-bios-attributes
+
+  - name: If no location is present in the response header message, then we need to create a BIOS config job
+    uri:
+      url: "https://{{inventory_hostname}}/redfish/v1/Managers/iDRAC.Embedded.1/Jobs"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: POST
+      headers:
+        accept: "application/json"
+        content-type: "application/json"
+      body:
+        "TargetSettingsURI": "/redfish/v1/Systems/System.Embedded.1/Bios/Settings"
+      body_format: "json"
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 202]
+    register: bios_config_job_response
+    when: new_bios_attributes is defined and bios_config_response.location is not defined
+    tags:
+      - set-bios-attributes
+
+  - name: Check if location is present in the response header and store it in a fact variable so that we use it for monitoring the BIOS config job status
+    set_fact:
+      bios_config_job_url: "{{ bios_config_job_response.location }}"
+    when: new_bios_attributes is defined and bios_config_job_response.location is defined
+    tags:
+      - set-bios-attributes
+
+  - name: Fail if the JOB URL is not received
+    fail:
+      msg: "Failed to rceive BIOS configuration JOB URL in the HTTPS response. Cannot proceed with BIOS configuration task." 
+    when: new_bios_attributes is defined and bios_config_job_url is not defined
+    tags:
+      - set-bios-attributes
+
+  - name: Get the JOB details
+    uri:
+      url: "{{ bios_config_job_url }}"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 202]
+    register: bios_config_task
+    when: new_bios_attributes is defined
+    tags:
+      - set-bios-attributes
+
+  - name: Reboot server to apply the BIOS settings
+    redfish_command:
+      category: Systems
+      command: PowerReboot
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+    register: result
+    when: new_bios_attributes is defined
+    tags:
+      - set-bios-attributes
+
+  - name: loop over the JOB until it completes or fails
+    uri:
+      url: "{{ bios_config_job_url }}"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 202]
+    register: result
+    when: new_bios_attributes is defined
+    until: result.json['JobState'] == 'Completed' or result.json['JobState'] == 'Failed'
+    retries: 15
+    delay: 60
+    changed_when: result.json['JobState'] == 'Completed'
+    failed_when: result.json['JobState'] == 'Failed'
+    tags:
+      - set-bios-attributes
+      - temp

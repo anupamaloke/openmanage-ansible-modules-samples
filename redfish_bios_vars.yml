@@ -1,0 +1,127 @@
+---
+# AC Power Recovery   Off
+AcPwrRcvry: "Off"
+# Adjacent Cache Line Prefetch  Enabled
+ProcAdjCacheLine: "Enabled"
+# Boot Mode BIOS
+BootMode: "Bios"
+# Boot Sequence Retry   Enabled
+BootSeqRetry: "Enabled"
+# C States  Disabled
+ProcCStates: "Disabled"
+# C1E   Enabled
+ProcC1E: "Enabled"
+# CPU Interconnect Bus Link Power Management        Disabled
+CpuInterconnectBusLinkPower: "Disabled"
+# CPU Interconnect Speed        Maximum data rate
+CpuInterconnectBusSpeed: "MaxDataRate"
+# CPU Power Management      OS DBPM
+ProcPwrPerf: "OsDbpm"
+# DCU IP Prefetcher     Enabled
+DcuIpPrefetcher: "Enabled"
+# DCU Streamer Prefetcher   Enabled
+DcuStreamerPrefetcher: "Enabled"
+# Dell Controlled Turbo Enabled
+ControlledTurbo: "Enabled"
+# EZ Nic Port 1 On with PXE
+EmbNicPort1BootProto: "Pxe"
+# EZ Nic Port 3 On with PXE
+EmbNicPort3BootProto: "Pxe"
+# Energy Efficient Policy  Performance
+#EnergyPerformanceBias: "MaxPower"
+# External Serial Connector     Serial Device 1
+ExtSerialConnector: "Serial1"
+# F1/F2 Prompt on Error     Disabled
+ErrPrompt: "Disabled"
+# Failsafe Baud Rate    115200
+FailSafeBaud: "115200"
+# Hardware Prefetcher       Enabled
+ProcHwPrefetcher: "Enabled"
+# I/OAT DMA Engine      Disabled
+IoatEngine: "Disabled"
+# Integrated Network Card 1 Enabled
+EmbNic1: "Enabled"
+# Internal USB Port     On
+InternalUsb: "On"
+# Keyboard NumLock  On
+NumLock: "On"
+# Load Legacy Video Option ROM  Disabled
+ForceInt10: "Disabled"
+# Logical Processor Disabled
+LogicalProc: "Disabled"
+# Memory Frequency      Maximum Performance
+MemFrequency: "MaxPerf"
+# Memory Mapped I/O above 4GB       Enabled
+MmioAbove4Gb: "Enabled"
+# Memory Operating Mode Optimizer Mode
+MemOpMode: "OptimizerMode"
+# Memory Patrol Scrub       Disabled
+MemPatrolScrub: "Disabled"
+# Memory Refresh Rate   1x
+MemRefreshRate: "1x"
+# Monitor/Mwait     Enabled
+MonitorMwait: "Enabled"
+# Node Interleaving     Disabled
+NodeInterleave: "Disabled"
+# Number of Cores per Processor     All
+ProcCores: "All"
+# OS Watchdog Timer     Disabled
+OsWatchdogTimer: "Disabled"
+# PCI ASPM L1 Link Power Management Disabled
+PcieAspmL1: "Disabled"
+# Password Status Unlocked
+PasswordStatus: "Unlocked"
+# Power Button Enabled
+PwrButton: "Enabled"
+# Redirection After Boot = Enabled
+RedirAfterBoot: "Enabled"
+# Remote Terminal Type      VT100/VT220
+ConTermType: "Vt100Vt220"
+# SR-IOV Global Enable  Disabled
+SriovGlobalEnable: "Disabled"
+# Serial Communication      On without Console Redirection
+SerialComm: "OnNoConRedir"
+# Serial Port Address   Serial Device1=COM2     Serial Device2=COM1
+SerialPortAddress: "Serial1Com2Serial2Com1"
+# Slot 1    Enabled
+Slot1: "Enabled"
+# Slot 2        Enabled
+Slot2: "Enabled"
+# Slot 3    Enabled
+Slot3: "Enabled"
+# Slot 4        Enabled
+Slot4: "Enabled"
+# Slot 5    Enabled
+Slot5: "Enabled"
+# Slot 6        Enabled
+Slot6: "Enabled"
+# Slot 7    Enabled
+Slot7: "Enabled"
+# Slot 8        Enabled
+Slot8: "Enabled"
+# Sub NUMA Cluster  Disabled
+SubNumaCluster: "Disabled"
+# System Memory Testing Disabled
+MemTest: "Disabled"
+# System Profile    Custom
+SysProfile: "Custom"
+# Turbo Boost   Enabled
+ProcTurboMode: "Enabled"
+# Uncore Frequency  Maximum
+UncoreFrequency: "MaxUFS"
+# User Accessible USB Ports     All Ports On
+UsbPorts: "AllOn"
+# Virtualization Technology Disabled
+ProcVirtualization: "Disabled"
+# Write Data CRC        Disabled
+WriteDataCrc: "Disabled"
+# x2APIC Mode       Disabled
+ProcX2Apic: "Disabled"
+# BIOS.MemSettings.CorrEccSmi = Disabled
+CorrEccSmi: "Disabled"
+# BIOS.MemSettings.OppSrefEn = Disabled
+OppSrefEn: "Disabled"
+# BIOS.SysProfileSettings.EnergyEfficientPolicy = Performance
+EnergyPerformanceBias: "MaxPower"
+# BIOS.SysProfileSettings.WorkloadProfile = NotAvailable
+WorkloadProfile: "NotAvailable"
