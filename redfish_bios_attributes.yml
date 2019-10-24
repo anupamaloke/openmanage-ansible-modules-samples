@@ -92,7 +92,7 @@
         accept: "application/json"
         content-type: "application/json"
       body:
-        "@Redfish.SettingsApplyTime": "OnReset"
+        "@Redfish.SettingsApplyTime": {"ApplyTime": "OnReset"}
         "Attributes": "{{ new_bios_attributes }}"
       body_format: "json"
       force_basic_auth: no
@@ -192,4 +192,3 @@
     failed_when: result.json['JobState'] == 'Failed'
     tags:
       - set-bios-attributes
-      - temp
