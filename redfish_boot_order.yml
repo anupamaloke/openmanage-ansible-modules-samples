@@ -1,0 +1,149 @@
+---
+- hosts: idrac
+  connection: local
+  gather_facts: no
+
+  vars:
+    ansible_python_interpreter: python
+    one_time_boot_device: "Pxe"
+    uefi_pxe_attributes:
+      "PxeDev1EnDis": "Enabled"
+      "PxeDev1Interface": "NIC.Slot.4-1"
+
+  tasks:
+  - name: Check that Boot mode must be set to Uefi before setting the Uefi PXE attributes
+    redfish_facts:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "GetBiosAttributes"
+    register: result
+    tags:
+      - one-time-pxe-boot
+
+  - name: Check that Boot mode must be set to Uefi before setting the Uefi PXE attributes
+    set_fact:
+      curr_boot_mode: "{{ redfish_facts.bios_attribute.entries[0] | selectattr('BootMode', 'defined') | map(attribute='BootMode') | list | first }}"
+    tags:
+      - one-time-pxe-boot
+
+  - name: Change BootMode to 'Uefi' if currently set to 'Bios'
+    redfish_config:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "SetBiosAttributes"
+      bios_attribute_name: "BootMode"
+      bios_attribute_value: "Uefi"
+    when: curr_boot_mode != 'Uefi'
+    register: set_boot_mode_uefi
+    tags:
+      - one-time-pxe-boot
+
+  - name: Create a BIOS config job to change BootMode to Uefi
+    idrac_redfish_command:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "CreateBiosConfigJob"
+    when: curr_boot_mode != 'Uefi' and set_boot_mode_uefi.changed
+    register: boot_mode_uefi_bios_config_job
+    tags:
+      - one-time-pxe-boot
+
+  - name: Reboot system to apply new BIOS settings
+    redfish_command:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "PowerReboot"
+    when: curr_boot_mode != 'Uefi' and boot_mode_uefi_bios_config_job.changed
+    register: reboot_boot_mode_uefi
+    tags:
+      - one-time-pxe-boot
+
+  - name: wait for BIOS config job to finish
+    wait_for:
+      timeout: 360
+    when: curr_boot_mode != 'Uefi' and boot_mode_uefi_bios_config_job.changed
+    tags:
+      - one-time-pxe-boot
+
+  - name: Set Uefi PXE Boot attributes to boot from a specific NIC FQDD
+    redfish_config:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "SetBiosAttributes"
+      bios_attribute_name: "{{ item.key }}"
+      bios_attribute_value: "{{ item.value }}"
+    register: set_uefi_pxe_attributes
+    loop: "{{ uefi_pxe_attributes | dict2items }}"
+    tags:
+      - one-time-pxe-boot
+
+  - name: Check if any of the attributes have changed
+    set_fact:
+      bios_attributes_changed: "{{ set_uefi_pxe_attributes.results | selectattr('changed', 'defined') | selectattr('changed', 'equalto', true) | list }}"
+    tags:
+      - one-time-pxe-boot
+
+  - name: Create a BIOS config job to apply the UEFI PXE attributes
+    idrac_redfish_command:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "CreateBiosConfigJob"
+    when: bios_attributes_changed | length > 0
+    register: uefi_pxe_bios_config_job
+    tags:
+      - one-time-pxe-boot
+
+  - name: Reboot system to apply new UEFI PXE settings
+    redfish_command:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "PowerReboot"
+    when: (bios_attributes_changed | length) > 0 and uefi_pxe_bios_config_job.changed
+    register: reboot_uefi_pxe_attributes
+    tags:
+      - one-time-pxe-boot
+
+  - name: wait for BIOS config job to finish
+    wait_for:
+      timeout: 360
+    when: (bios_attributes_changed | length) > 0 and reboot_uefi_pxe_attributes.changed
+    tags:
+      - one-time-pxe-boot
+
+  - name: Set one time boot device to PXE
+    redfish_command:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "SetOneTimeBoot"
+      bootdevice: "{{ one_time_boot_device }}"
+    register: set_one_time_boot
+    tags:
+      - one-time-pxe-boot
+
+  - name: Reboot server to boot from PXE
+    redfish_command:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: "Systems"
+      command: "PowerReboot"
+    register: reboot_one_time_boot
+    when: set_one_time_boot.changed
+    tags:
+      - one-time-pxe-boot
