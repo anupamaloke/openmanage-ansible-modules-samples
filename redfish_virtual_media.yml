@@ -1,0 +1,125 @@
+---
+- hosts: idrac
+  name: Insert an ISO image on a http share as a Virtual Media CD device
+  connection: local
+  gather_facts: no
+
+  vars:
+    ansible_python_interpreter: python
+    image: "http://192.168.1.1/iso/VMware-VMvisor-Installer-6.7.0.update02-13981272.x86_64-DellEMC_Customized-A03.iso"
+
+  tasks:
+  - name: Get virtual media information
+    uri:
+      url: "https://{{ inventory_hostname }}/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+    register: virtual_media_info
+    tags:
+      - virtual-media 
+      - insert-vm
+
+  - name: Print the virtual media information
+    debug:
+      msg: "{{ virtual_media_info.json }}"
+    tags:
+      - virtual-media
+      - insert-vm
+
+  - name: Get detailed information for all virtual media device
+    uri:
+      url: "https://{{ inventory_hostname }}{{ item['@odata.id'] }}"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: GET
+      headers:
+        accept: "application/json"
+      force_basic_auth: no
+      validate_certs: no
+    register: virtual_media_members_info
+    loop: "{{ virtual_media_info.json.Members }}"
+    when: virtual_media_info.json["Members@odata.count"] > 0
+    tags:
+      - virtual-media
+      - insert-vm
+
+  - name: Print the detailed virtual media information
+    debug:
+      var: virtual_media_members_info
+    tags:
+      - virtual-media
+      - insert-vm
+
+  - name: Check if an ISO is already attached as a virtual media CD device
+    set_fact:
+      vmedia_cd_inserted: "{{ virtual_media_members_info.results | selectattr('json', 'defined') | map(attribute='json') | selectattr('Id', 'equalto', 'CD') | map(attribute='Inserted') | list | first }}"
+      vmedia_cd_image: "{{ virtual_media_members_info.results | selectattr('json', 'defined') | map(attribute='json') | selectattr('Id', 'equalto', 'CD') | map(attribute='Image') | list | first }}"
+    tags:
+      - insert-vm
+
+  - debug:
+      msg:
+        - "Virtual Media CD Inserted: {{ vmedia_cd_inserted }}"
+        - "Virtual Media CD Image: {{ vmedia_cd_image }}"
+    tags:
+      - insert-vm
+
+  - name:  End play if the desired ISO image is already attached as a virtual media CD
+    debug:
+      msg: "{{ image }} is already attached as a virtual media CD device. Exiting the playbook"
+    when: vmedia_cd_inserted and vmedia_cd_image == image
+    tags:
+      - insert-vm
+
+  - name: End play if the desired ISO image is already attached as a virtual media CD
+    meta: end_host
+    when: vmedia_cd_inserted and vmedia_cd_image == image
+    tags:
+      - insert-vm
+
+  - name: Eject virtual media CD if a different ISO image is already inserted
+    uri:
+      url: "https://{{ inventory_hostname }}/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia/CD/Actions/VirtualMedia.EjectMedia"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: POST
+      headers:
+        accept: "application/json"
+        content-type: "application/json"
+      body: {}
+      body_format: json
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 204]
+    register: eject_vm_response
+    when: vmedia_cd_inserted and vmedia_cd_image != image
+    changed_when: eject_vm_response.status == 204
+    tags:
+      - insert-vm
+
+  - name: Insert ISO image as virtual media 
+    uri:
+      url: "https://{{ inventory_hostname }}/redfish/v1/Managers/iDRAC.Embedded.1/VirtualMedia/CD/Actions/VirtualMedia.InsertMedia"
+      user: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      method: POST
+      headers:
+        accept: "application/json"
+        content-type: "application/json"
+      body:
+        "Image": "{{ image }}"
+        "Inserted": True
+        "WriteProtected": True
+      body_format: json
+      force_basic_auth: no
+      validate_certs: no
+      status_code: [200, 204]
+    register: insert_vm_response
+    changed_when: insert_vm_response.status == 204
+    tags:
+      - insert-vm
