@@ -1,0 +1,33 @@
+---
+- hosts: idrac
+  connection: local
+  gather_facts: no
+
+  vars:
+    ansible_python_interpreter: python
+
+  tasks:
+  - name: List users
+    redfish_facts:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: Accounts
+      command: ListUsers
+    register: users_list
+
+  - name: Get root user ID
+    set_fact:
+      root_user_id: "{{ users_list.ansible_facts.redfish_facts.user.entries | selectattr('UserName', 'equalto', 'root') | map(attribute='Id') | list | first }}"
+
+  - name: Change password for the root user
+    redfish_command:
+      baseuri: "{{ inventory_hostname }}"
+      username: "{{ idrac_user }}"
+      password: "{{ idrac_password }}"
+      category: Accounts
+      command: UpdateUserPassword
+      id: "{{ root_user_id | int }}"
+      new_password: "{{ new_root_user_password }}"
+    tags:
+      - update-pwd
