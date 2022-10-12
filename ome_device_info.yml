@@ -1,0 +1,13 @@
+---
+- hosts: ome
+  connection: local
+  gather_facts: no
+
+  tasks:
+  - name: List users
+    dellemc.openmanage.ome_device_info:
+      hostname: "{{ inventory_hostname }}"
+      username: "{{ user }}"
+      password: "{{ password }}"
+      validate_certs: False
+    register: device_info
